@@ -1,0 +1,2130 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="美团开放服务(MOS) : " />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>美团开放服务(MOS)</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/meituan/mcsapi">View on GitHub</a>
+
+          <h1 id="project_title">美团开放服务(MOS)</h1>
+          <h2 id="project_tagline"></h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/meituan/mcsapi/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/meituan/mcsapi/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="mos%E4%BA%91%E4%B8%BB%E6%9C%BAmcs-api%E8%A7%84%E8%8C%83" class="anchor" href="#mos%E4%BA%91%E4%B8%BB%E6%9C%BAmcs-api%E8%A7%84%E8%8C%83"><span class="octicon octicon-link"></span></a>MOS云主机(MCS) API规范</h1>
+
+<p>MOS云主机(MCS, Meituan Compute Service)提供EC2兼容的API访问接口，以方便用户自动化管理云主机。为了访问MOS开放接口，MOS为每个用户分配访问的令牌和密码（ACCESS KEY ID和SECRET），每个访问请求都需要携带ACCESS KEY ID以及SECRET对请求数据的数字签名。用户可以在MOS界面的帐户页面中进行查询和管理ACCESS KEY ID和SECRET。</p>
+
+<h2>
+<a name="api%E6%8E%A5%E5%8F%A3" class="anchor" href="#api%E6%8E%A5%E5%8F%A3"><span class="octicon octicon-link"></span></a>API接口</h2>
+
+<p>每个MOS区域(Region)有一个独立的API入口。入口URL信息在MOS上公布。</p>
+
+<p>接口支持GET和POST两种方式。参数以key-value形式通过x-form-url-encoded格式编码提交。例如：</p>
+
+<pre><code>https://10.168.44.160:8883?
+    Action=DescribeTemplates&amp;
+    AWSAccessKeyId=4ba303cc17454cc7904e044db2a3c912&amp;
+    SignatureVersion=2&amp;
+    Timestamp=2013-07-20T15%3A02%3A17.000Z&amp;
+    SignatureMethod=HmacSHA256&amp;
+    Signature=q90E9%2BNtkVb9rJUPQJy75Ec%2F7j6HRCFfaSp2OhWYwuc%3D
+</code></pre>
+
+<p>一般，每个接口请求都包含如下参数：</p>
+
+<table><tbody>
+<tr>
+<th>参数名称</th>
+      <th>是否可选</th>
+      <th>说明</th>
+      <th>举例</th>
+    </tr>
+<tr>
+<td>Action</td>
+      <td>必选</td>
+      <td>API请求的类型名称。支持的Action及相关参数参见下文"Action列表"。</td>
+      <td>"DescribeInstances"</td>
+    </tr>
+<tr>
+<td>AWSAccessKeyId</td>
+      <td>必选</td>
+      <td>访问API请求的ACCESS KEY ID</td>
+      <td>"4ba303cc17454cc7904e044db2a3c912"</td>
+    </tr>
+<tr>
+<td>Timestamp</td>
+      <td>必选</td>
+      <td>该请求的时间戳，iso8601格式："YYYY-MM-DDTHH:MM:SS.MMMZ"</td>
+      <td>"2013-07-20T02:41:04.000Z"</td>
+    </tr>
+<tr>
+<td>SignatureVersion</td>
+      <td>必选</td>
+      <td>数字签名算法版本，目前支持AWS数字签名2.0版本，该值必须为2</td>
+      <td>"2"</td>
+    </tr>
+<tr>
+<td>SignatureMethod</td>
+      <td>必选</td>
+      <td>数字签名的Hash算法，可能的值为"HmacSHA256"和"HmacSHA1"，分别对应SHA256和SHA1算法</td>
+      <td>"HmacSHA256"</td>
+    </tr>
+<tr>
+<td>Signature</td>
+      <td>必选</td>
+      <td>请求内容的数字签名，具体签名生成算法见下文。</td>
+      <td>"m4XAVozDdWIduO8DkOj7fECeNZsUbX41Bv1atOSqMwA="</td>
+    </tr>
+<tr>
+<td>Format</td>
+      <td>可选</td>
+      <td>返回内容的编码格式，可选值为xml和json，如果未指定，则默认为xml。如果返回为xml，则返回Content-Type为application/xml，如果是json格式，则为application/json。</td>
+      <td>"json"</td>
+    </tr>
+</tbody></table><h3>
+<a name="%E6%95%B0%E5%AD%97%E7%AD%BE%E5%90%8D%E7%94%9F%E6%88%90%E6%96%B9%E6%B3%95" class="anchor" href="#%E6%95%B0%E5%AD%97%E7%AD%BE%E5%90%8D%E7%94%9F%E6%88%90%E6%96%B9%E6%B3%95"><span class="octicon octicon-link"></span></a>数字签名生成方法</h3>
+
+<p>MOS开放API需要签名，遵循<a href="http://docs.aws.amazon.com/general/latest/gr/signature-version-2.html">WS API 2.0签名规范</a>。需要将请求内容按如下方法拼接，并按照指定Hash算法获得base64编码的签名字符串：</p>
+
+<p>1. 全部字母大写的HTTP请求方法（GET或POST)，以换行(\n)结束。例如：</p>
+
+<pre><code>POST\n
+</code></pre>
+
+<p>2. 全部字母为小写的API服务主机名，以换行(\n)结束。如果请求端口号为非默认端口（http非80端口，https非443），则需要加上端口，以冒号和host分隔。例如：</p>
+
+<pre><code>mos-api.meituan.com\n
+</code></pre>
+
+<p>3. 请求绝对路径，以换行(\n)结束。如果路径为空字符串，则为根路径"/"。例如：</p>
+
+<pre><code>/\n
+</code></pre>
+
+<p>4. 所有请求参数按照请求参数名称的字典顺序排序，并以x-www-form-urlencoded编码拼接在一起。例如：</p>
+
+<pre><code>AWSAccessKeyId=4ba303cc17454cc7904e044db2a3c912&amp;Action=DescribeTemplates&amp;SignatureMethod=HmacSHA256&amp;SignatureVersion=2&amp;Timestamp=2013-07-20T15%3A28%3A04.000Z
+</code></pre>
+
+<p>完整的拼接的签名内容为：</p>
+
+<pre><code>POST
+mos-api.meituan.com
+/
+AWSAccessKeyId=4ba303cc17454cc7904e044db2a3c912&amp;Action=DescribeTemplates&amp;SignatureMethod=HmacSHA256&amp;SignatureVersion=2&amp;Timestamp=2013-07-20T15%3A28%3A04.000Z
+</code></pre>
+
+<p>5. 最后，以SECRET为Key对上述字符串以SHA256算法进行Hash后获得签名，结果为：</p>
+
+<pre><code>EFVL9+vcx6tG9DCp04Ic+itrdCD/uZEhisS9amSSbig=
+</code></pre>
+
+<h3>
+<a name="%E8%BF%94%E5%9B%9E%E6%A0%BC%E5%BC%8F" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%A0%BC%E5%BC%8F"><span class="octicon octicon-link"></span></a>返回格式</h3>
+
+<p>如果API请求成功，服务器返回HTTP 200，body包含返回数据。返回数据根据请求的Format参数进行格式化。</p>
+
+<p>如果API请求失败，服务器返回HTTP 4xx，body包含错误信息，消息格式示例如下：</p>
+
+<p>xml格式错误响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;ErrorResponse&gt;
+    &lt;Error&gt;
+        &lt;message&gt;Not enough balance&lt;/message&gt;
+        &lt;code&gt;406&lt;/code&gt;
+    &lt;/Error&gt;
+&lt;/ErrorResponse&gt;
+</code></pre>
+
+<p>json格式错误响应</p>
+
+<pre><code>{"ErrorResponse":
+    {"Error":
+        {"message": "Not enough balance",
+         "code": 406
+        }
+    }
+}
+</code></pre>
+
+<p>其中，code为错误代码，message为错误消息。code和返回消息的HTTP错误代码相同。</p>
+
+<h2>
+<a name="action%E5%88%97%E8%A1%A8" class="anchor" href="#action%E5%88%97%E8%A1%A8"><span class="octicon octicon-link"></span></a>Action列表</h2>
+
+<h3>
+<a name="1-%E6%A8%A1%E6%9D%BF%E7%9B%B8%E5%85%B3" class="anchor" href="#1-%E6%A8%A1%E6%9D%BF%E7%9B%B8%E5%85%B3"><span class="octicon octicon-link"></span></a>1. 模板相关</h3>
+
+<h4>
+<a name="describetemplates" class="anchor" href="#describetemplates"><span class="octicon octicon-link"></span></a>DescribeTemplates</h4>
+
+<p>列出所有用户可以使用的虚拟机模板，在创建虚拟机，更改虚拟机系统磁盘时，需要相关信息。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<p>无</p>
+
+<h5>
+<a name="%E8%BE%93%E5%87%BA%E5%AD%97%E6%AE%B5" class="anchor" href="#%E8%BE%93%E5%87%BA%E5%AD%97%E6%AE%B5"><span class="octicon octicon-link"></span></a>输出字段：</h5>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+        <th>类型</th>
+        <th>说明</th>
+      </tr>
+<tr>
+<td>templateId</td>
+        <td>string</td>
+        <td>模板ID</td>
+      </tr>
+<tr>
+<td>templateName</td>
+        <td>string</td>
+        <td>模板名称</td>
+      </tr>
+<tr>
+<td>size</td>
+        <td>int</td>
+        <td>模板Image的字节大小(Bytes)</td>
+      </tr>
+<tr>
+<td>checksum</td>
+        <td>string</td>
+        <td>模板Image的MD5 checksum</td>
+      </tr>
+<tr>
+<td>status</td>
+        <td>string</td>
+        <td>模板状态</td>
+      </tr>
+</tbody></table><h5>
+<a name="%E7%A4%BA%E4%BE%8B" class="anchor" href="#%E7%A4%BA%E4%BE%8B"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    Action=DescribeTemplates&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;DescribeTemplatesResponse&gt;
+    &lt;TemplateSet&gt;
+        &lt;Template&gt;
+            &lt;status&gt;active&lt;/status&gt;
+            &lt;checksum&gt;952a921243eecf2f457b82051e880558&lt;/checksum&gt;
+            &lt;templateId&gt;019c6db6-55fa-443d-ac0c-182e3379d175&lt;/templateId&gt;
+            &lt;size&gt;187367424&lt;/size&gt;
+            &lt;templateName&gt;turnkey-core-12.0-squeeze-x86.qcow2&lt;/templateName&gt;
+        &lt;/Template&gt;
+    &lt;/TemplateSet&gt;
+&lt;/DescribeTemplatesResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"DescribeTemplatesResponse": 
+    {"TemplateSet": 
+        {"Template": [
+            {"status": "active",
+             "checksum": "952a921243eecf2f457b82051e880558",
+             "templateName": "turnkey-core-12.0-squeeze-x86.qcow2",
+             "templateId": "019c6db6-55fa-443d-ac0c-182e3379d175",
+             "size": 187367424
+            }
+         ]
+        }
+    }
+}
+</code></pre>
+
+<h3>
+<a name="2-%E5%A5%97%E9%A4%90%E7%B1%BB%E5%9E%8B%E7%9B%B8%E5%85%B3" class="anchor" href="#2-%E5%A5%97%E9%A4%90%E7%B1%BB%E5%9E%8B%E7%9B%B8%E5%85%B3"><span class="octicon octicon-link"></span></a>2. 套餐类型相关</h3>
+
+<h4>
+<a name="describeinstancetypes" class="anchor" href="#describeinstancetypes"><span class="octicon octicon-link"></span></a>DescribeInstanceTypes</h4>
+
+<p>列出所有用户可以使用的虚拟机套餐类型，在创建虚拟机，更改虚拟机类型时，需要相关信息。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-1" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-1"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>Limit</td>
+      <td>integer</td>
+      <td>可选</td>
+      <td>本次请求返回的数量</td>
+    </tr>
+<tr>
+<td>Offset</td>
+      <td>integer</td>
+      <td>可选</td>
+      <td>本次请求返回的偏移量</td>
+    </tr>
+<tr>
+<td>Filter.n.Name</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>过滤字段名称，n从1开始。可能的值为：name</td>
+    </tr>
+<tr>
+<td>Filter.n.Value.m</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>对应Filter.n.Name的过滤字段的匹配值，m从1开始</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>返回InstanceTypeSet，包含如下子段：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+      <th>类型</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceType</td>
+      <td>complextype</td>
+      <td>虚拟机类型定义</td>
+    </tr>
+<tr>
+<td>Total</td>
+      <td>integer</td>
+      <td>返回符合条件的虚拟机类型总量</td>
+    </tr>
+<tr>
+<td>Limit</td>
+      <td>integer</td>
+      <td>返回虚拟机类型的数量</td>
+    </tr>
+<tr>
+<td>Offset</td>
+      <td>integer</td>
+      <td>返回虚拟机类型的偏移量</td>
+    </tr>
+</tbody></table><p>InstanceType包含如下子段：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+      <th>类型</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>instanceTypeId</td>
+      <td>string</td>
+      <td>虚拟机类型ID</td>
+    </tr>
+<tr>
+<td>instanceType</td>
+      <td>string</td>
+      <td>虚拟机类型名称</td>
+    </tr>
+<tr>
+<td>cpu</td>
+      <td>integer</td>
+      <td>该类型虚拟机CPU核数，单位为个</td>
+    </tr>
+<tr>
+<td>memory</td>
+      <td>integer</td>
+      <td>该类型虚拟机内存大小，单位为MB</td>
+    </tr>
+<tr>
+<td>volume</td>
+      <td>integer</td>
+      <td>该类型虚拟机虚拟存储大小，单位为MB</td>
+    </tr>
+<tr>
+<td>internalBandwidth</td>
+      <td>integer</td>
+      <td>该类型虚拟机内网接入带宽，单位为Mbps</td>
+    </tr>
+<tr>
+<td>externalBandwidth</td>
+      <td>integer</td>
+      <td>该类型虚拟机外网接入带宽，单位为Mbps</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E7%A4%BA%E4%BE%8B-1" class="anchor" href="#%E7%A4%BA%E4%BE%8B-1"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    Limit=1&amp;
+    Action=DescribeInstanceTypes&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;DescribeInstanceTypesResponse&gt;
+    &lt;InstanceTypeSet&gt;
+        &lt;Total&gt;7&lt;/Total&gt;
+        &lt;Limit&gt;1&lt;/Limit&gt;
+        &lt;InstanceType&gt;
+            &lt;instanceTypeId&gt;8e845438-2f6d-4c87-9216-88da6692dc2b&lt;/instanceTypeId&gt;
+            &lt;internalBandwidth&gt;200&lt;/internalBandwidth&gt;
+            &lt;externalBandwidth&gt;2&lt;/externalBandwidth&gt;
+            &lt;cpu&gt;1&lt;/cpu&gt;
+            &lt;volume&gt;1024&lt;/volume&gt;
+            &lt;memory&gt;128&lt;/memory&gt;
+            &lt;instanceType&gt;small_net_2&lt;/instanceType&gt;
+        &lt;/InstanceType&gt;
+    &lt;/InstanceTypeSet&gt;
+&lt;/DescribeInstanceTypesResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"DescribeInstanceTypesResponse": 
+    {"InstanceTypeSet": 
+        {"Total": 7, 
+         "Limit": 1, 
+         "InstanceType": [
+            {"instanceTypeId": "8e845438-2f6d-4c87-9216-88da6692dc2b",
+             "internalBandwidth": 200,
+             "externalBandwidth": 2,
+             "instanceType": "small_net_2", 
+             "volume": 1024, 
+             "memory": 128, 
+             "cpu": 1,
+            }
+         ]
+        }
+    }
+}
+</code></pre>
+
+<h3>
+<a name="3-%E5%B8%90%E6%88%B7%E7%9B%B8%E5%85%B3" class="anchor" href="#3-%E5%B8%90%E6%88%B7%E7%9B%B8%E5%85%B3"><span class="octicon octicon-link"></span></a>3. 帐户相关</h3>
+
+<h4>
+<a name="getbalance" class="anchor" href="#getbalance"><span class="octicon octicon-link"></span></a>GetBalance</h4>
+
+<p>获得用户的当前帐户余额</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-2" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-2"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<p>无</p>
+
+<h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-1" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-1"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+        <th>类型</th>
+        <th>说明</th>
+      </tr>
+<tr>
+<td>balance</td>
+        <td>decimal(10,2)</td>
+        <td>帐户余额</td>
+      </tr>
+<tr>
+<td>timestamp</td>
+        <td>datetime</td>
+        <td>最后一次帐户余额发生变化的时间，如果该帐户从未发生过交易，则余额为0，无timestamp字段</td>
+      </tr>
+</tbody></table><h5>
+<a name="%E7%A4%BA%E4%BE%8B-2" class="anchor" href="#%E7%A4%BA%E4%BE%8B-2"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    Action=GetBalance&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;GetBalanceResponse&gt;
+    &lt;timestamp&gt;2013-07-19T15:52:02Z&lt;/timestamp&gt;
+    &lt;balance&gt;16.66&lt;/balance&gt;
+&lt;/GetBalanceResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"GetBalanceResponse": 
+    {"timestamp": "2013-07-19T15:52:02Z",
+     "balance": 16.66
+    }
+}
+</code></pre>
+
+<h3>
+<a name="4-ssh-key%E7%9B%B8%E5%85%B3" class="anchor" href="#4-ssh-key%E7%9B%B8%E5%85%B3"><span class="octicon octicon-link"></span></a>4. SSH Key相关</h3>
+
+<h4>
+<a name="describekeypairs" class="anchor" href="#describekeypairs"><span class="octicon octicon-link"></span></a>DescribeKeyPairs</h4>
+
+<p>列出用户所有的SSH Key pairs</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-3" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-3"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>Limit</td>
+      <td>integer</td>
+      <td>可选</td>
+      <td>本次请求返回的最多数量</td>
+    </tr>
+<tr>
+<td>Offset</td>
+      <td>integer</td>
+      <td>可选</td>
+      <td>本次请求返回的偏移量</td>
+    </tr>
+<tr>
+<td>Filter.n.Name</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>过滤字段名称，n从1开始。可能的值为：name</td>
+    </tr>
+<tr>
+<td>Filter.n.Value.m</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>对应Filter.n.Name的过滤字段的匹配值，m从1开始</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-2" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-2"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>返回KeyPairSet包含如下字段：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+      <th>类型</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>KeyPair</td>
+      <td>complexType</td>
+      <td>返回的SSH Key信息</td>
+    </tr>
+<tr>
+<td>Total</td>
+      <td>integer</td>
+      <td>满足查询条件的SSH Key个数</td>
+    </tr>
+<tr>
+<td>Limit</td>
+      <td>integer</td>
+      <td>实际返回的SSH Key个数</td>
+    </tr>
+<tr>
+<td>Offset</td>
+      <td>integer</td>
+      <td>返回的偏移量</td>
+    </tr>
+</tbody></table><p>KeyPair包含的字段：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+      <th>类型</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>keyId</td>
+      <td>string</td>
+      <td>SSH Key的ID</td>
+    </tr>
+<tr>
+<td>keyName</td>
+      <td>string</td>
+      <td>SSH Key的名称</td>
+    </tr>
+<tr>
+<td>keyFingerprint</td>
+      <td>string</td>
+      <td>SSH 公钥(public key)的指纹(fingerprint)</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E7%A4%BA%E4%BE%8B-3" class="anchor" href="#%E7%A4%BA%E4%BE%8B-3"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    Action=DescribeKeyPairs&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;DescribeKeyPairsResponse&gt;
+    &lt;KeyPairSet&gt;
+        &lt;KeyPair&gt;
+            &lt;keyId&gt;cb97eb8b-de94-4148-849f-2b931cfce97a&lt;/keyId&gt;
+            &lt;keyName&gt;testkey&lt;/keyName&gt;
+            &lt;keyFingerprint&gt;0a:43:d9:7b:17:a1:24:26:9a:0e:ce:dc:f4:0a:03:44&lt;/keyFingerprint&gt;
+        &lt;/KeyPair&gt;
+        &lt;KeyPair&gt;
+            &lt;keyId&gt;b7bfd341-e6d1-4971-8c45-d3ed6f97a846&lt;/keyId&gt;
+            &lt;keyName&gt;mackey&lt;/keyName&gt;
+            &lt;keyFingerprint&gt;18:0e:d1:45:82:54:78:be:60:f1:a6:8f:cf:64:88:1e&lt;/keyFingerprint&gt;
+        &lt;/KeyPair&gt;
+    &lt;/KeyPairSet&gt;
+&lt;/DescribeKeyPairsResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"DescribeKeyPairsResponse": 
+    {"KeyPairSet": 
+        {"KeyPair": [
+            {"keyId": "cb97eb8b-de94-4148-849f-2b931cfce97a",
+             "keyName": "testkey",
+             "keyFingerprint": "0a:43:d9:7b:17:a1:24:26:9a:0e:ce:dc:f4:0a:03:44"
+            },
+            {"keyId": "b7bfd341-e6d1-4971-8c45-d3ed6f97a846",
+             "keyName": "mackey",
+             "keyFingerprint": "18:0e:d1:45:82:54:78:be:60:f1:a6:8f:cf:64:88:1e"
+            }
+         ]
+        }
+    }
+}
+</code></pre>
+
+<h4>
+<a name="importkeypair" class="anchor" href="#importkeypair"><span class="octicon octicon-link"></span></a>ImportKeyPair</h4>
+
+<p>导入一个SSH Key</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-4" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-4"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>KeyName</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>SSH Key名称</td>
+    </tr>
+<tr>
+<td>PublicKeyMaterial</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>SSH Key的public key</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-3" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-3"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>返回KeyPair包含的字段：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+      <th>类型</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>keyId</td>
+      <td>string</td>
+      <td>SSH Key的ID</td>
+    </tr>
+<tr>
+<td>keyName</td>
+      <td>string</td>
+      <td>SSH Key的名称</td>
+    </tr>
+<tr>
+<td>keyFingerprint</td>
+      <td>string</td>
+      <td>SSH 公钥(public key)的指纹(fingerprint)</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E7%A4%BA%E4%BE%8B-4" class="anchor" href="#%E7%A4%BA%E4%BE%8B-4"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    KeyName=newkey&amp;
+    Action=ImportKeyPair&amp;
+    PublicKeyMaterial=ssh-rsa+AAAAB3Nza...OVL%2B2Y7R+qj%40dog%0A&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;ImportKeyPairResponse&gt;
+    &lt;KeyPair&gt;
+        &lt;keyId&gt;0f4697a4-6439-4ae7-b6fe-be29ace2303c&lt;/keyId&gt;
+        &lt;keyName&gt;newkey&lt;/keyName&gt;
+        &lt;keyFingerprint&gt;0a:43:d9:7b:17:a1:24:26:9a:0e:ce:dc:f4:0a:03:44&lt;/keyFingerprint&gt;
+    &lt;/KeyPair&gt;
+&lt;/ImportKeyPairResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"ImportKeyPairResponse":
+    {"KeyPair":
+        {"keyId": "0f4697a4-6439-4ae7-b6fe-be29ace2303c",
+         "keyName": "newkey",
+         "keyFingerprint": "0a:43:d9:7b:17:a1:24:26:9a:0e:ce:dc:f4:0a:03:44"
+        }
+    }
+}
+</code></pre>
+
+<h4>
+<a name="deletekeypair" class="anchor" href="#deletekeypair"><span class="octicon octicon-link"></span></a>DeleteKeyPair</h4>
+
+<p>删除一个SSH Key</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-5" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-5"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>KeyName</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>SSH Key名称</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-4" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-4"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>成功则返回值return为True；否则返回错误信息。</p>
+
+<h5>
+<a name="%E7%A4%BA%E4%BE%8B-5" class="anchor" href="#%E7%A4%BA%E4%BE%8B-5"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    KeyName=newkey&amp;
+    Action=DeleteKeyPair&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;DeleteKeyPairResponse&gt;
+    &lt;return&gt;True&lt;/return&gt;
+&lt;/DeleteKeyPairResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"DeleteKeyPairResponse":
+    {"return": "True"
+    }
+}
+</code></pre>
+
+<h3>
+<a name="5-%E8%99%9A%E6%8B%9F%E6%9C%BA%E7%9B%B8%E5%85%B3" class="anchor" href="#5-%E8%99%9A%E6%8B%9F%E6%9C%BA%E7%9B%B8%E5%85%B3"><span class="octicon octicon-link"></span></a>5. 虚拟机相关</h3>
+
+<h4>
+<a name="describeinstances" class="anchor" href="#describeinstances"><span class="octicon octicon-link"></span></a>DescribeInstances</h4>
+
+<p>列出所有或指定的用户虚拟机实例。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-6" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-6"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId.n</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>指定虚拟机的ID，n从1开始</td>
+    </tr>
+<tr>
+<td>InstanceName.n</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>指定虚拟机的Name，n从1开始</td>
+    </tr>
+<tr>
+<td>Limit</td>
+      <td>integer</td>
+      <td>可选</td>
+      <td>本次请求返回的最多数量</td>
+    </tr>
+<tr>
+<td>Offset</td>
+      <td>integer</td>
+      <td>可选</td>
+      <td>本次请求返回的偏移量</td>
+    </tr>
+<tr>
+<td>Filter.n.Name</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>过滤字段名称，n从1开始。可能的值为：name, status</td>
+    </tr>
+<tr>
+<td>Filter.n.Value.m</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>对应Filter.n.Name的过滤字段的匹配值，m从1开始</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-5" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-5"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>返回InstanceSet包含如下字段：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+      <th>类型</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>Instance</td>
+      <td>complexType</td>
+      <td>返回的虚拟机信息</td>
+    </tr>
+<tr>
+<td>Total</td>
+      <td>integer</td>
+      <td>满足查询条件的虚拟机个数</td>
+    </tr>
+<tr>
+<td>Limit</td>
+      <td>integer</td>
+      <td>实际返回的虚拟机个数</td>
+    </tr>
+<tr>
+<td>Offset</td>
+      <td>integer</td>
+      <td>虚拟机的偏移量</td>
+    </tr>
+</tbody></table><p>Instance包含的字段：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+      <th>类型</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>instanceId</td>
+      <td>string</td>
+      <td>虚拟机的ID</td>
+    </tr>
+<tr>
+<td>instanceName</td>
+      <td>string</td>
+      <td>虚拟机的名称</td>
+    </tr>
+<tr>
+<td>instanceType</td>
+      <td>string</td>
+      <td>虚拟机的类型</td>
+    </tr>
+<tr>
+<td>instanceTypeId</td>
+      <td>string</td>
+      <td>虚拟机类型的ID</td>
+    </tr>
+<tr>
+<td>status</td>
+      <td>string</td>
+      <td>虚拟机的状态，可能值有running/ready/suspend等</td>
+    </tr>
+<tr>
+<td>cpu</td>
+      <td>integer</td>
+      <td>虚拟机的CPU核数</td>
+    </tr>
+<tr>
+<td>memory</td>
+      <td>integer</td>
+      <td>虚拟机的内存大小，单位为MB</td>
+    </tr>
+<tr>
+<td>volume</td>
+      <td>integer</td>
+      <td>虚拟机的总磁盘大小，单位为MB</td>
+    </tr>
+<tr>
+<td>ipAddresses</td>
+      <td>string</td>
+      <td>虚拟机的IP地址列表</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E7%A4%BA%E4%BE%8B-6" class="anchor" href="#%E7%A4%BA%E4%BE%8B-6"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    Limit=1&amp;
+    Offset=2&amp;
+    Action=DescribeInstances&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;DescribeInstancesResponse&gt;
+    &lt;InstanceSet&gt;
+        &lt;Instance&gt;
+            &lt;status&gt;ready&lt;/status&gt;
+            &lt;instanceId&gt;027ff1d8-e3a0-4e2e-a1e1-03d6ee03c353&lt;/instanceId&gt;
+            &lt;instanceType&gt;small&lt;/instanceType&gt;
+            &lt;volume&gt;59&lt;/volume&gt;
+            &lt;memory&gt;128&lt;/memory&gt;
+            &lt;instanceName&gt;testtest&lt;/instanceName&gt;
+            &lt;cpu&gt;1&lt;/cpu&gt;
+            &lt;ipAddresses&gt;10.168.44.230&lt;/ipAddresses&gt;
+        &lt;/Instance&gt;
+        &lt;Total&gt;6&lt;/Total&gt;
+        &lt;Limit&gt;1&lt;/Limit&gt;
+        &lt;Offset&gt;2&lt;/Offset&gt;
+    &lt;/InstanceSet&gt;
+&lt;/DescribeInstancesResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"DescribeInstancesResponse": 
+    {"InstanceSet":
+        {"Instance": [
+            {"status": "ready",
+             "instanceId": "027ff1d8-e3a0-4e2e-a1e1-03d6ee03c353",
+             "cpu": 1,
+             "volume": 59,
+             "memory": 128,
+             "instanceName": "testtest",
+             "instanceType": "small",
+             "ipAddresses": "10.168.44.230",
+            }
+         ], 
+         "Total": 6,
+         "Limit": 1,
+         "Offset": 2
+        }
+    }
+}
+</code></pre>
+
+<h4>
+<a name="describeinstancestatus" class="anchor" href="#describeinstancestatus"><span class="octicon octicon-link"></span></a>DescribeInstanceStatus</h4>
+
+<p>获得指定虚拟机实例的状态。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-7" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-7"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>指定虚拟机ID</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-6" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-6"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>返回InstanceStatus，包含status字段。</p>
+
+<h5>
+<a name="%E7%A4%BA%E4%BE%8B-7" class="anchor" href="#%E7%A4%BA%E4%BE%8B-7"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=testtest&amp;
+    Action=DescribeInstanceStatus&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;DescribeInstanceStatusResponse&gt;
+    &lt;InstanceStatus&gt;
+        &lt;status&gt;ready&lt;/status&gt;
+    &lt;/InstanceStatus&gt;
+&lt;/DescribeInstanceStatusResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"DescribeInstanceStatusResponse": 
+    {"InstanceStatus": 
+        {"status": "ready"}
+    }
+}
+</code></pre>
+
+<h4>
+<a name="describeinstancevolumes" class="anchor" href="#describeinstancevolumes"><span class="octicon octicon-link"></span></a>DescribeInstanceVolumes</h4>
+
+<p>列出指定虚拟机的所有虚拟磁盘的信息。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-8" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-8"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>指定虚拟机ID</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-7" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-7"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>返回数据集InstanceVolumeSet，包含如下字段：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+      <th>类型</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceVolume</td>
+      <td>complex type</td>
+      <td>一个虚拟机磁盘的信息</td>
+    </tr>
+</tbody></table><p>InstanceVolume包含如下字段信息：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+      <th>类型</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>instanceId</td>
+      <td>string</td>
+      <td>虚拟机ID</td>
+    </tr>
+<tr>
+<td>instanceName</td>
+      <td>string</td>
+      <td>虚拟机名称</td>
+    </tr>
+<tr>
+<td>volumeId</td>
+      <td>string</td>
+      <td>虚拟磁盘ID</td>
+    </tr>
+<tr>
+<td>volumeName</td>
+      <td>string</td>
+      <td>虚拟磁盘名称</td>
+    </tr>
+<tr>
+<td>volumeSize</td>
+      <td>integer</td>
+      <td>磁盘大小，单位为MB</td>
+    </tr>
+<tr>
+<td>cacheMode</td>
+      <td>string</td>
+      <td>磁盘的缓存模式，可能值为none, writeback, writethrough, 缺省为none</td>
+    </tr>
+<tr>
+<td>driver</td>
+      <td>string</td>
+      <td>磁盘的驱动，可能值为virtio, ide和scsi，缺省为virtio</td>
+    </tr>
+<tr>
+<td>index</td>
+      <td>integer</td>
+      <td>磁盘挂载在虚拟机上的序号，从0开始</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E7%A4%BA%E4%BE%8B-8" class="anchor" href="#%E7%A4%BA%E4%BE%8B-8"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=testtest&amp;
+    Action=DescribeInstanceVolumes&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;DescribeInstanceVolumesResponse&gt;
+    &lt;InstanceVolumeSet&gt;
+        &lt;InstanceVolume&gt;
+            &lt;index&gt;1&lt;/index&gt;
+            &lt;instanceId&gt;027ff1d8-e3a0-4e2e-a1e1-03d6ee03c353&lt;/instanceId&gt;
+            &lt;volumeName&gt;vdisk_testtest_1371493324.491348&lt;/volumeName&gt;
+            &lt;driver&gt;virtio&lt;/driver&gt;
+            &lt;volumeId&gt;0fccde09-74af-4504-9c89-52016510e9d7&lt;/volumeId&gt;
+            &lt;cacheMode&gt;none&lt;/cacheMode&gt;
+            &lt;volumeSize&gt;20&lt;/volumeSize&gt;
+            &lt;instanceName&gt;testtest&lt;/instanceName&gt;
+        &lt;/InstanceVolume&gt;
+        &lt;InstanceVolume&gt;...&lt;/InstanceVolume&gt;
+    &lt;/InstanceVolumeSet&gt;
+&lt;/DescribeInstanceVolumesResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"DescribeInstanceVolumesResponse": 
+    {"InstanceVolumeSet": 
+        {"InstanceVolume": [
+            {"index": 1, 
+             "instanceId": "027ff1d8-e3a0-4e2e-a1e1-03d6ee03c353", 
+             "volumeName": "vdisk_testtest_1371493324.491348", 
+             "driver": "virtio", 
+             "volumeId": "0fccde09-74af-4504-9c89-52016510e9d7", 
+             "cacheMode": "none", 
+             "volumeSize": 20, 
+             "instanceName": "testtest"
+            },
+            {...}
+         ]
+        }
+    }
+}
+</code></pre>
+
+<h4>
+<a name="describeinstancenetworkinterfaces" class="anchor" href="#describeinstancenetworkinterfaces"><span class="octicon octicon-link"></span></a>DescribeInstanceNetworkInterfaces</h4>
+
+<p>列出指定虚拟机实例的所有虚拟网络接口的信息。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-9" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-9"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+        <th>类型</th>
+        <th>可选</th>
+        <th>说明</th>
+      </tr>
+<tr>
+<td>InstanceId</td>
+        <td>string</td>
+        <td>必须</td>
+        <td>指定虚拟机ID</td>
+      </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-8" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-8"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>返回数据集InstanceNetworkInterfaceSet，包含如下字段：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+        <th>类型</th>
+        <th>说明</th>
+      </tr>
+<tr>
+<td>InstanceNetworkInterface</td>
+        <td>complex type</td>
+        <td>一个虚拟机网络接口的信息</td>
+      </tr>
+</tbody></table><p>InstanceNetworkInterface包含如下信息：</p>
+  <table><tbody>
+<tr>
+<th>字段名</th>
+        <th>类型</th>
+        <th>说明</th>
+      </tr>
+<tr>
+<td>instanceId</td>
+        <td>string</td>
+        <td>虚拟机ID</td>
+      </tr>
+<tr>
+<td>instanceName</td>
+        <td>string</td>
+        <td>虚拟机名称</td>
+      </tr>
+<tr>
+<td>networkId</td>
+        <td>string</td>
+        <td>网络接口接入的虚拟机网络ID</td>
+      </tr>
+<tr>
+<td>networkName</td>
+        <td>string</td>
+        <td>网络接口接入的虚拟网络名称</td>
+      </tr>
+<tr>
+<td>ipAddress</td>
+        <td>string</td>
+        <td>网络接口的IP地址</td>
+      </tr>
+<tr>
+<td>macAddress</td>
+        <td>string</td>
+        <td>网络接口的硬件地址</td>
+      </tr>
+<tr>
+<td>bandwidth</td>
+        <td>integer</td>
+        <td>网络接口带宽，单位为Mbps</td>
+      </tr>
+<tr>
+<td>driver</td>
+        <td>string</td>
+        <td>驱动，可能值有virtio, e1000，缺省为virtio</td>
+      </tr>
+<tr>
+<td>index</td>
+        <td>integer</td>
+        <td>网络接口在虚拟机上的序号</td>
+      </tr>
+</tbody></table><h5>
+<a name="%E7%A4%BA%E4%BE%8B-9" class="anchor" href="#%E7%A4%BA%E4%BE%8B-9"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=testtest&amp;
+    Action=DescribeInstanceNetworkInterfaces&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;DescribeInstanceNetworkInterfacesResponse&gt;
+    &lt;InstanceNetworkInterfaceSet&gt;
+        &lt;InstanceNetworkInterface&gt;
+            &lt;networkId&gt;40480c6f-2c7e-4ba8-b040-92a64a948c90&lt;/networkId&gt;
+            &lt;index&gt;0&lt;/index&gt;
+            &lt;instanceId&gt;027ff1d8-e3a0-4e2e-a1e1-03d6ee03c353&lt;/instanceId&gt;
+            &lt;instanceName&gt;testtest&lt;/instanceName&gt;
+            &lt;driver&gt;virtio&lt;/driver&gt;
+            &lt;bandwidth&gt;10&lt;/bandwidth&gt;
+            &lt;networkName&gt;public&lt;/networkName&gt;
+            &lt;ipAddress&gt;10.168.44.229&lt;/ipAddress&gt;
+            &lt;macAddress&gt;00:22:34:84:24:60&lt;/macAddress&gt;
+        &lt;/InstanceNetworkInterface&gt;
+    &lt;/InstanceNetworkInterfaceSet&gt;
+&lt;/DescribeInstanceNetworkInterfacesResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"DescribeInstanceNetworkInterfacesResponse": 
+    {"InstanceNetworkInterfaceSet": 
+        {"InstanceNetworkInterface": [
+            {"networkId": "40480c6f-2c7e-4ba8-b040-92a64a948c90",
+             "index": 0,
+             "instanceId": "027ff1d8-e3a0-4e2e-a1e1-03d6ee03c353",
+             "networkName": "public",
+             "driver": "virtio",
+             "bandwidth": 10,
+             "instanceName": "testtest",
+             "ipAddress": "10.168.44.229",
+             "macAddress": "00:22:34:84:24:60"
+            },
+            {...}
+         ]
+        }
+    }
+}
+</code></pre>
+
+<h4>
+<a name="getpassworddata" class="anchor" href="#getpassworddata"><span class="octicon octicon-link"></span></a>GetPasswordData</h4>
+
+<p>获得指定虚拟机实例的初始帐户和密码信息。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-10" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-10"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+        <th>类型</th>
+        <th>可选</th>
+        <th>说明</th>
+      </tr>
+<tr>
+<td>InstanceId</td>
+        <td>string</td>
+        <td>必须</td>
+        <td>指定虚拟机ID</td>
+      </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-9" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-9"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+        <th>类型</th>
+        <th>说明</th>
+      </tr>
+<tr>
+<td>timestamp</td>
+        <td>datetime</td>
+        <td>指示初始帐号密码生成的时间</td>
+      </tr>
+<tr>
+<td>account</td>
+        <td>string</td>
+        <td>虚拟机的初始帐号</td>
+      </tr>
+<tr>
+<td>passwordData</td>
+        <td>string</td>
+        <td>虚拟机的初始帐号密码数据，如果虚拟机未使用keypair，则该数据为明文密码，否则，该数据为keypair公钥加密，需要使用该keypair的对应key文件解密</td>
+      </tr>
+<tr>
+<td>keypairId</td>
+        <td>string</td>
+        <td>如果虚拟机使用了keypair，则为该虚拟机使用的keypair的ID；否则无此字段</td>
+      </tr>
+<tr>
+<td>keypairName</td>
+        <td>string</td>
+        <td>如果虚拟机使用了keypair，则为该虚拟机使用的keypair的名称；否则无此字段</td>
+      </tr>
+</tbody></table><h5>
+<a name="%E7%A4%BA%E4%BE%8B-10" class="anchor" href="#%E7%A4%BA%E4%BE%8B-10"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=system&amp;
+    Action=GetPasswordData&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;GetPasswordDataResponse&gt;
+    &lt;timestamp&gt;2013-07-22T02:48:56Z&lt;/timestamp&gt;
+    &lt;account&gt;cirros&lt;/account&gt;
+    &lt;passwordData&gt;jwFN2C3Ngmgu&lt;/passwordData&gt;
+&lt;/GetPasswordDataResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"GetPasswordDataResponse": 
+    {"timestamp": "2013-07-22T02:48:56Z", 
+     "account": "cirros", 
+     "passwordData": "jwFN2C3Ngmgu"
+    }
+}
+</code></pre>
+
+<h4>
+<a name="getinstancecontractinfo" class="anchor" href="#getinstancecontractinfo"><span class="octicon octicon-link"></span></a>GetInstanceContractInfo</h4>
+
+<p>获得指定虚拟机实例的合同时间信息。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-11" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-11"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+        <th>类型</th>
+        <th>可选</th>
+        <th>说明</th>
+      </tr>
+<tr>
+<td>InstanceId</td>
+        <td>string</td>
+        <td>必须</td>
+        <td>指定虚拟机ID</td>
+      </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-10" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-10"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>返回如下字段：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+        <th>类型</th>
+        <th>说明</th>
+      </tr>
+<tr>
+<td>started_at</td>
+        <td>datetime</td>
+        <td>虚拟机租约开始时间</td>
+      </tr>
+<tr>
+<td>expire_at</td>
+        <td>datetime</td>
+        <td>虚拟机租约到期时间</td>
+      </tr>
+<tr>
+<td>extend_to</td>
+        <td>datetime</td>
+        <td>如果未按期续费，虚拟机过期后保留时间</td>
+      </tr>
+</tbody></table><h5>
+<a name="%E7%A4%BA%E4%BE%8B-11" class="anchor" href="#%E7%A4%BA%E4%BE%8B-11"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=system&amp;
+    Action=GetInstanceContractInfo&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;GetInstanceContractInfoResponse&gt;
+    &lt;started_at&gt;2013-07-22T03:00:00Z&lt;/started_at&gt;
+    &lt;extend_to&gt;2013-07-26T03:00:00Z&lt;/extend_to&gt;
+    &lt;expire_at&gt;2013-07-25T03:00:00Z&lt;/expire_at&gt;
+&lt;/GetInstanceContractInfoResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"GetInstanceContractInfoResponse":
+    {"started_at": "2013-07-22T03:00:00Z",
+     "extend_to": "2013-07-26T03:00:00Z",
+     "expire_at": "2013-07-25T03:00:00Z"
+    }
+}
+</code></pre>
+
+<h4>
+<a name="startinstance" class="anchor" href="#startinstance"><span class="octicon octicon-link"></span></a>StartInstance</h4>
+
+<p>启动指定虚拟机实例。虚拟机在ready状态时才能成功启动。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-12" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-12"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>指定虚拟机ID</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-11" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-11"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>成功则返回值return为True；否则返回错误信息。</p>
+
+<h5>
+<a name="%E7%A4%BA%E4%BE%8B-12" class="anchor" href="#%E7%A4%BA%E4%BE%8B-12"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=system&amp;
+    Action=StartInstance&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;StartInstanceResponse&gt;
+    &lt;return&gt;True&lt;/return&gt;
+&lt;/StartInstanceResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"StartInstanceResponse":
+    {"return": "True"
+    }
+}
+</code></pre>
+
+<h4>
+<a name="stopinstance" class="anchor" href="#stopinstance"><span class="octicon octicon-link"></span></a>StopInstance</h4>
+
+<p>停止指定虚拟机实例。只有虚拟机在running状态时才能成功停止虚拟机。如果指定强制停止，则虚拟机进程立即退出，可能会造成虚拟机内部数据丢失。否则，虚拟机将试图软关机，30秒超时后，如果虚拟机实例还未停止，则强制停止。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-13" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-13"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>停止的虚拟机ID</td>
+    </tr>
+<tr>
+<td>Force</td>
+      <td>boolean</td>
+      <td>可选</td>
+      <td>是否强制立即停止</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-12" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-12"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>成功则返回值return为True；否则返回错误信息。</p>
+
+<h5>
+<a name="%E7%A4%BA%E4%BE%8B-13" class="anchor" href="#%E7%A4%BA%E4%BE%8B-13"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=system&amp;
+    Action=StopInstance&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;StopInstanceResponse&gt;
+    &lt;return&gt;True&lt;/return&gt;
+&lt;/StopInstanceResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"StopInstanceResponse":
+    {"return": "True"
+    }
+}
+</code></pre>
+
+<h4>
+<a name="rebootinstance" class="anchor" href="#rebootinstance"><span class="octicon octicon-link"></span></a>RebootInstance</h4>
+
+<p>重启指定虚拟机实例。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-14" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-14"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>重启的虚拟机ID</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-13" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-13"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>成功则返回值return为True；否则返回错误信息。</p>
+
+<h5>
+<a name="%E7%A4%BA%E4%BE%8B-14" class="anchor" href="#%E7%A4%BA%E4%BE%8B-14"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=system&amp;
+    Action=RebootInstance&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RebootInstanceResponse&gt;
+    &lt;return&gt;True&lt;/return&gt;
+&lt;/RebootInstanceResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"RebootInstanceResponse":
+    {"return": "True"
+    }
+}
+</code></pre>
+
+<h4>
+<a name="rebuildinstancerootimage" class="anchor" href="#rebuildinstancerootimage"><span class="octicon octicon-link"></span></a>RebuildInstanceRootImage</h4>
+
+<p>重置指定虚拟机实例的的系统磁盘镜像。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-15" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-15"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>需要重置系统盘镜像的InstanceId</td>
+    </tr>
+<tr>
+<td>ImageId</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>指定充值系统盘的源模板镜像ID，如果不指定该参数，则重置为原来的操作系统</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-14" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-14"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>成功则返回值return为True；否则返回错误信息。</p>
+
+<h5>
+<a name="%E7%A4%BA%E4%BE%8B-15" class="anchor" href="#%E7%A4%BA%E4%BE%8B-15"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=system&amp;
+    Action=RebuildInstanceRootImage&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RebuildInstanceRootImageResponse&gt;
+    &lt;return&gt;True&lt;/return&gt;
+&lt;/RebuildInstanceRootImageResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"RebuildInstanceRootImageResponse":
+    {"return": "True"
+    }
+}
+</code></pre>
+
+<h4>
+<a name="createinstance" class="anchor" href="#createinstance"><span class="octicon octicon-link"></span></a>CreateInstance</h4>
+
+<p>创建虚拟机实例。*注意：该操作涉及系统帐户扣费，请保证帐户有足够余额，否则将创建失败*。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-16" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-16"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>ImageId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>镜像模板ID</td>
+    </tr>
+<tr>
+<td>InstanceType</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>创建的类型</td>
+    </tr>
+<tr>
+<td>Duration</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>创建的虚拟机的时间，格式为数字+H/M，例如1H, 72H或者1M。缺省为1M</td>
+    </tr>
+<tr>
+<td>InstanceName</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>指定创建的虚拟机的名称</td>
+    </tr>
+<tr>
+<td>KeyName</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>指定创建的虚拟机使用的SSH Key</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-15" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-15"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>如果成功返回生成的Instance信息，包含如下字段：</p>
+
+<table><tbody>
+<tr>
+<th>字段名</th>
+      <th>类型</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>instanceId</td>
+      <td>string</td>
+      <td>虚拟机ID</td>
+    </tr>
+<tr>
+<td>instanceName</td>
+      <td>string</td>
+      <td>虚拟机名称</td>
+    </tr>
+<tr>
+<td>instanceType</td>
+      <td>string</td>
+      <td>虚拟机类型</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E7%A4%BA%E4%BE%8B-16" class="anchor" href="#%E7%A4%BA%E4%BE%8B-16"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    ImageId=d1620e45-c561-42e7-a2a4-53ae0a389bb9&amp;
+    Duration=72H&amp;
+    InstanceType=small_net&amp;
+    Action=CreateInstance&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;CreateInstanceResponse&gt;
+    &lt;Instance&gt;
+        &lt;instanceId&gt;022a58da-5cee-4589-9e6a-f54fa1abd269&lt;/instanceId&gt;
+        &lt;instanceName&gt;system&lt;/instanceName&gt;
+        &lt;instanceType&gt;small_net&lt;/instanceType&gt;
+    &lt;/Instance&gt;
+&lt;/CreateInstanceResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"CreateInstanceResponse": 
+    {"Instance": 
+        {"instanceId": "022a58da-5cee-4589-9e6a-f54fa1abd269", 
+         "instanceName": "system", 
+         "instanceType": "small_net"
+        }
+    }
+}
+</code></pre>
+
+<h4>
+<a name="terminateinstance" class="anchor" href="#terminateinstance"><span class="octicon octicon-link"></span></a>TerminateInstance</h4>
+
+<p>销毁指定虚拟机实例。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-17" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-17"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>销毁虚拟机的ID</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-16" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-16"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>成功则返回值return为True；否则返回错误信息。</p>
+
+<h5>
+<a name="%E7%A4%BA%E4%BE%8B-17" class="anchor" href="#%E7%A4%BA%E4%BE%8B-17"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=system&amp;
+    Action=TerminateInstance&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;TerminateInstanceResponse&gt;
+    &lt;return&gt;True&lt;/return&gt;
+&lt;/TerminateInstanceResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"TerminateInstanceResponse":
+    {"return": "True"
+    }
+}
+</code></pre>
+
+<h4>
+<a name="renewinstance" class="anchor" href="#renewinstance"><span class="octicon octicon-link"></span></a>RenewInstance</h4>
+
+<p>续期指定虚拟机实例。*注意：该操作涉及系统帐户扣费，请保证帐户有足够余额，否则将续期失败*。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-18" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-18"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>需要续期的虚拟机ID</td>
+    </tr>
+<tr>
+<td>Duration</td>
+      <td>string</td>
+      <td>可选</td>
+      <td>指定续期时间，格式为数字+H/M（小时/月），例如1H, 72H或者1M。如果不指定，缺省为1M</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-17" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-17"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>成功则返回值return为True；否则返回错误信息。</p>
+
+<h5>
+<a name="%E7%A4%BA%E4%BE%8B-18" class="anchor" href="#%E7%A4%BA%E4%BE%8B-18"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=system&amp;
+    Duration=72H&amp;
+    Action=RenewInstance&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RenewInstanceResponse&gt;
+    &lt;return&gt;True&lt;/return&gt;
+&lt;/RenewInstanceResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"RenewInstanceResponse":
+    {"return": "True"
+    }
+}
+</code></pre>
+
+<h4>
+<a name="changeinstancetype" class="anchor" href="#changeinstancetype"><span class="octicon octicon-link"></span></a>ChangeInstanceType</h4>
+
+<p>更改指定虚拟机实例的类型。*注意：该操作涉及系统帐户扣费，请保证帐户有足够余额，否则将更改失败*。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-19" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-19"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>更改类型的虚拟机ID</td>
+    </tr>
+<tr>
+<td>InstanceType</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>更改的虚拟机类型</td>
+    </tr>
+<tr>
+<td>Duration</td>
+      <td>datetime</td>
+      <td>可选</td>
+      <td>更改后虚拟机的租期时间，格式为数字+H/M（小时/月），例如1H, 72H或者1M。如果不指定，缺省为1M
+      </td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-18" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-18"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>成功则返回值return为True；否则返回错误信息。</p>
+
+<h5>
+<a name="%E7%A4%BA%E4%BE%8B-19" class="anchor" href="#%E7%A4%BA%E4%BE%8B-19"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=system&amp;
+    Action=ChangeInstanceType&amp;
+    InstanceType=small_net&amp;
+    Duration=1M&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;ChangeInstanceTypeResponse&gt;
+    &lt;return&gt;True&lt;/return&gt;
+&lt;/ChangeInstanceTypeResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"ChangeInstanceTypeResponse":
+    {"return": "True"
+    }
+}
+</code></pre>
+
+<h4>
+<a name="getinstancemetadata" class="anchor" href="#getinstancemetadata"><span class="octicon octicon-link"></span></a>GetInstanceMetadata</h4>
+
+<p>获取指定虚拟机实例的元数据。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-20" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-20"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>指定虚拟机ID</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-19" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-19"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>返回InstanceMetadata数据集，包含所有key-value的元数据。</p>
+
+<h5>
+<a name="%E7%A4%BA%E4%BE%8B-20" class="anchor" href="#%E7%A4%BA%E4%BE%8B-20"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=system&amp;
+    Action=GetInstanceMetadata&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;GetInstanceMetadataResponse&gt;
+    &lt;InstanceMetadata&gt;
+        &lt;os_version&gt;2011.08&lt;/os_version&gt;
+        &lt;os_name&gt;Linux&lt;/os_name&gt;
+        &lt;os_distribution&gt;Cirros&lt;/os_distribution&gt;
+    &lt;/InstanceMetadata&gt;
+&lt;/GetInstanceMetadataResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"GetInstanceMetadataResponse": 
+    {"InstanceMetadata": 
+        {"os_version": "2011.08",
+         "os_name": "Linux",
+         "os_distribution": "Cirros"
+        }
+    }
+}
+</code></pre>
+
+<h4>
+<a name="putinstancemetadata" class="anchor" href="#putinstancemetadata"><span class="octicon octicon-link"></span></a>PutInstanceMetadata</h4>
+
+<p>设置指定虚拟机实例的元数据。</p>
+
+<h5>
+<a name="%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-21" class="anchor" href="#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0-21"><span class="octicon octicon-link"></span></a>请求参数：</h5>
+
+<table><tbody>
+<tr>
+<th>参数名</th>
+      <th>类型</th>
+      <th>可选</th>
+      <th>说明</th>
+    </tr>
+<tr>
+<td>InstanceId</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>指定虚拟机ID</td>
+    </tr>
+<tr>
+<td>Name.n</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>指定第n个元数据的key，n从1开始</td>
+    </tr>
+<tr>
+<td>Value.n</td>
+      <td>string</td>
+      <td>必须</td>
+      <td>指定第n个元数据的value，n从1开始</td>
+    </tr>
+</tbody></table><h5>
+<a name="%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-20" class="anchor" href="#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE-20"><span class="octicon octicon-link"></span></a>返回数据：</h5>
+
+<p>成功则返回值return为True；否则返回错误信息。</p>
+
+<h5>
+<a name="%E7%A4%BA%E4%BE%8B-21" class="anchor" href="#%E7%A4%BA%E4%BE%8B-21"><span class="octicon octicon-link"></span></a>示例：</h5>
+
+<p>请求URL</p>
+
+<pre><code>https://10.168.44.160:8883?
+    InstanceId=system&amp;
+    Name.1=test7d&amp;
+    Value.1=1&amp;
+    Action=PutInstanceMetadata&amp;
+    AUTHDATA
+</code></pre>
+
+<p>xml响应</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;PutInstanceMetadataResponse&gt;
+    &lt;return&gt;True&lt;/return&gt;
+&lt;/PutInstanceMetadataResponse&gt;
+</code></pre>
+
+<p>json响应</p>
+
+<pre><code>{"PutInstanceMetadataResponse":
+    {"return": "True"
+    }
+}
+</code></pre>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">美团开放服务(MOS) maintained by <a href="https://github.com/meituan">meituan</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
