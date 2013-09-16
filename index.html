@@ -34,12 +34,12 @@
         <h1>
 <a name="mos%E4%BA%91%E4%B8%BB%E6%9C%BAmcs-api%E8%A7%84%E8%8C%83" class="anchor" href="#mos%E4%BA%91%E4%B8%BB%E6%9C%BAmcs-api%E8%A7%84%E8%8C%83"><span class="octicon octicon-link"></span></a>MOS云主机(MCS) API规范</h1>
 
-<p>MOS云主机(MCS, Meituan Compute Service)提供EC2兼容的API访问接口，以方便用户自动化管理云主机。为了访问MOS开放接口，MOS为每个用户分配访问的令牌和密码（ACCESS KEY ID和SECRET），每个访问请求都需要携带ACCESS KEY ID以及SECRET对请求数据的数字签名。用户可以在MOS界面的帐户页面中进行查询和管理ACCESS KEY ID和SECRET。</p>
+<p>MOS云主机(MCS, Meituan Compute Service)提供EC2兼容的API访问接口，以方便用户自动化管理云主机。为了访问MOS开放接口，MOS为每个用户分配访问的令牌和密码（ACCESS KEY ID和SECRET），每个访问请求都需要携带ACCESS KEY ID以及SECRET对请求数据的数字签名。用户可以在<a href="https://mos.meituan.com">MOS管理界面</a>的<a href="https://mos.meituan.com/dashboard/account#profile">帐户-个人设置</a>页面查询访问API的入口URL, ACCESS KEY ID以及SECRET。</p>
 
 <h2>
 <a name="api%E6%8E%A5%E5%8F%A3" class="anchor" href="#api%E6%8E%A5%E5%8F%A3"><span class="octicon octicon-link"></span></a>API接口</h2>
 
-<p>每个MOS区域(Region)有一个独立的API入口。入口URL信息在MOS上公布。</p>
+<p>每个MOS区域(Region)有一个独立的API入口。</p>
 
 <p>接口支持GET和POST两种方式。参数以key-value形式通过x-form-url-encoded格式编码提交。例如：</p>
 
@@ -106,7 +106,7 @@
 </tbody></table><h3>
 <a name="%E6%95%B0%E5%AD%97%E7%AD%BE%E5%90%8D%E7%94%9F%E6%88%90%E6%96%B9%E6%B3%95" class="anchor" href="#%E6%95%B0%E5%AD%97%E7%AD%BE%E5%90%8D%E7%94%9F%E6%88%90%E6%96%B9%E6%B3%95"><span class="octicon octicon-link"></span></a>数字签名生成方法</h3>
 
-<p>MOS开放API需要签名，遵循<a href="http://docs.aws.amazon.com/general/latest/gr/signature-version-2.html">WS API 2.0签名规范</a>。需要将请求内容按如下方法拼接，并按照指定Hash算法获得base64编码的签名字符串：</p>
+<p>MOS开放API需要签名，遵循<a href="http://docs.aws.amazon.com/general/latest/gr/signature-version-2.html">AWS API 2.0签名规范</a>。需要将请求内容按如下方法拼接，并按照指定Hash算法获得base64编码的签名字符串：</p>
 
 <p>1. 全部字母大写的HTTP请求方法（GET或POST)，以换行(\n)结束。例如：</p>
 
