@@ -1,7 +1,7 @@
 # MOS云主机(MCS) API规范 #
 
 
-MOS云主机(MCS, Meituan Compute Service)提供EC2兼容的API访问接口，以方便用户自动化管理云主机。为了访问MOS开放接口，MOS为每个用户分配访问的令牌和密码（ACCESS KEY ID和SECRET），每个访问请求都需要携带ACCESS KEY ID以及SECRET对请求数据的数字签名。用户可以在[MOS管理界面](https://mos.meituan.com)的[帐户-个人设置](https://mos.meituan.com/dashboard/account#profile)页面查询访问API的入口URL, ACCESS KEY ID以及SECRET。
+MOS云主机(MCS, Meituan Compute Service)提供EC2兼容的API访问接口，以方便用户自动化管理云主机。为了访问MOS开放接口，MOS为每个用户分配访问的令牌和密码（ACCESS KEY ID和SECRET），每个访问请求都需要携带ACCESS KEY ID以及SECRET对请求数据的数字签名。用户可以在 [MOS管理界面](https://mos.meituan.com) 的 [帐户-个人设置](https://mos.meituan.com/dashboard/account#profile) 页面查询访问API的入口URL, ACCESS KEY ID以及SECRET。
 
 ## API概述 ##
 
@@ -75,7 +75,7 @@ MOS云主机(MCS, Meituan Compute Service)提供EC2兼容的API访问接口，�
 
 ### 数字签名生成方法 ###
 
-MOS开放API需要签名，遵循[AWS API 2.0签名规范](http://docs.aws.amazon.com/general/latest/gr/signature-version-2.html)。需要将请求内容按如下方法拼接，并按照指定Hash算法获得base64编码的签名字符串：
+MOS开放API需要签名，遵循 [AWS API 2.0签名规范](http://docs.aws.amazon.com/general/latest/gr/signature-version-2.html) 。需要将请求内容按如下方法拼接，并按照指定Hash算法获得base64编码的签名字符串：
 
 1\. 全部字母大写的HTTP请求方法（GET或POST)，以换行(\n)结束。例如：
 
