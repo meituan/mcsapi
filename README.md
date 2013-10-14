@@ -3,7 +3,7 @@
 
 MOS云主机(MCS, Meituan Compute Service)提供EC2兼容的API访问接口，以方便用户自动化管理云主机。为了访问MOS开放接口，MOS为每个用户分配访问的令牌和密码（ACCESS KEY ID和SECRET），每个访问请求都需要携带ACCESS KEY ID以及SECRET对请求数据的数字签名。用户可以在[MOS管理界面](https://mos.meituan.com)的[帐户-个人设置](https://mos.meituan.com/dashboard/account#profile)页面查询访问API的入口URL, ACCESS KEY ID以及SECRET。
 
-## API介绍 ##
+## API概述 ##
 
 每个MOS区域(Region)有一个独立的API入口。
 
