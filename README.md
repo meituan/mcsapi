@@ -3,7 +3,7 @@
 
 MOS云主机(MCS, Meituan Compute Service)提供EC2兼容的API访问接口，以方便用户自动化管理云主机。为了访问MOS开放接口，MOS为每个用户分配访问的令牌和密码（ACCESS KEY ID和SECRET），每个访问请求都需要携带ACCESS KEY ID以及SECRET对请求数据的数字签名。用户可以在[MOS管理界面](https://mos.meituan.com)的[帐户-个人设置](https://mos.meituan.com/dashboard/account#profile)页面查询访问API的入口URL, ACCESS KEY ID以及SECRET。
 
-## API接口 ##
+## API介绍 ##
 
 每个MOS区域(Region)有一个独立的API入口。
 
@@ -139,19 +139,17 @@ json格式错误响应
 其中，code为错误代码，message为错误消息。code和返回消息的HTTP错误代码相同。
 
 
-## Action列表 ##
+## 模板API ##
 
-### 1. 模板相关 ###
-
-#### DescribeTemplates ####
+### DescribeTemplates ###
 
 列出所有用户可以使用的虚拟机模板，在创建虚拟机，更改虚拟机系统磁盘时，需要相关信息。
 
-##### 请求参数： #####
+**请求参数：**
 
 无
 
-##### 输出字段： #####
+**输出字段：**
 
 <table>
     <tbody>
@@ -188,7 +186,7 @@ json格式错误响应
     </tbody>
 </table>
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -228,13 +226,13 @@ json响应
     }
 
 
-### 2. 套餐类型相关 ###
+## 套餐类型API ##
 
-#### DescribeInstanceTypes ####
+### DescribeInstanceTypes ###
 
 列出所有用户可以使用的虚拟机套餐类型，在创建虚拟机，更改虚拟机类型时，需要相关信息。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -271,7 +269,7 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 返回InstanceTypeSet，包含如下子段：
 
@@ -352,7 +350,7 @@ InstanceType包含如下子段：
   </tbody>
 </table>
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -401,17 +399,17 @@ json响应
     }
 
 
-### 3. 帐户相关 ###
+## 帐户API ##
 
-#### GetBalance ####
+### GetBalance ###
 
 获得用户的当前帐户余额
 
-##### 请求参数： #####
+**请求参数：**
 
 无
 
-##### 返回数据： #####
+**返回数据：**
 
 <table>
     <tbody>
@@ -433,7 +431,7 @@ json响应
     </tbody>
 </table>
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -458,13 +456,13 @@ json响应
     }
 
 
-### 4. SSH Key相关 ###
+## SSH密钥API ##
 
-#### DescribeKeyPairs ####
+### DescribeKeyPairs ###
 
 列出用户所有的SSH Key pairs
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -501,7 +499,7 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 返回KeyPairSet包含如下字段：
 
@@ -562,7 +560,7 @@ KeyPair包含的字段：
   </tbody>
 </table>
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -606,11 +604,11 @@ json响应
         }
     }
 
-#### ImportKeyPair ####
+### ImportKeyPair ###
 
 导入一个SSH Key
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -635,7 +633,7 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 返回KeyPair包含的字段：
 
@@ -664,7 +662,7 @@ json响应
   </tbody>
 </table>
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -696,11 +694,11 @@ json响应
         }
     }
 
-#### DeleteKeyPair ####
+### DeleteKeyPair ###
 
 删除一个SSH Key
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -719,11 +717,11 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 成功则返回值return为True；否则返回错误信息。
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -747,13 +745,13 @@ json响应
     }
 
 
-### 5. 虚拟机相关 ###
+## 虚拟机API ##
 
-#### DescribeInstances ####
+### DescribeInstances ###
 
 列出所有或指定的用户虚拟机实例。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -802,7 +800,7 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 返回InstanceSet包含如下字段：
 
@@ -893,7 +891,7 @@ Instance包含的字段：
   </tbody>
 </table>
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -946,11 +944,11 @@ json响应
         }
     }
 
-#### DescribeInstanceStatus ####
+### DescribeInstanceStatus ###
 
 获得指定虚拟机实例的状态。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -969,11 +967,11 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 返回InstanceStatus，包含status字段。
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -999,11 +997,11 @@ json响应
         }
     }
 
-#### DescribeInstanceVolumes ####
+### DescribeInstanceVolumes ###
 
 列出指定虚拟机的所有虚拟磁盘的信息。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -1022,7 +1020,7 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 返回数据集InstanceVolumeSet，包含如下字段：
 
@@ -1093,7 +1091,7 @@ InstanceVolume包含如下字段信息：
   </tbody>
 </table>
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1141,11 +1139,11 @@ json响应
         }
     }
 
-#### DescribeInstanceNetworkInterfaces ####
+### DescribeInstanceNetworkInterfaces ###
 
 列出指定虚拟机实例的所有虚拟网络接口的信息。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
     <tbody>
@@ -1164,7 +1162,7 @@ json响应
     </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 返回数据集InstanceNetworkInterfaceSet，包含如下字段：
 
@@ -1238,7 +1236,7 @@ json响应
     </tbody>
 </table>
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1287,11 +1285,11 @@ json响应
         }
     }
 
-#### GetPasswordData ####
+### GetPasswordData ###
 
 获得指定虚拟机实例的初始帐户和密码信息。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
     <tbody>
@@ -1310,7 +1308,7 @@ json响应
     </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 <table>
     <tbody>
@@ -1347,7 +1345,7 @@ json响应
     </tbody>
 </table>
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1374,11 +1372,11 @@ json响应
         }
     }
 
-#### GetInstanceContractInfo ####
+### GetInstanceContractInfo ###
 
 获得指定虚拟机实例的合同时间信息。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
     <tbody>
@@ -1397,7 +1395,7 @@ json响应
     </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 返回如下字段：
 
@@ -1426,7 +1424,7 @@ json响应
     </tbody>
 </table>
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1454,11 +1452,11 @@ json响应
     }
 
 
-#### StartInstance ####
+### StartInstance ###
 
 启动指定虚拟机实例。虚拟机在ready状态时才能成功启动。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -1477,11 +1475,11 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 成功则返回值return为True；否则返回错误信息。
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1504,11 +1502,11 @@ json响应
         }
     }
 
-#### StopInstance ####
+### StopInstance ###
 
 停止指定虚拟机实例。只有虚拟机在running状态时才能成功停止虚拟机。如果指定强制停止，则虚拟机进程立即退出，可能会造成虚拟机内部数据丢失。否则，虚拟机将试图软关机，30秒超时后，如果虚拟机实例还未停止，则强制停止。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -1533,11 +1531,11 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 成功则返回值return为True；否则返回错误信息。
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1560,11 +1558,11 @@ json响应
         }
     }
 
-#### RebootInstance ####
+### RebootInstance ###
 
 重启指定虚拟机实例。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -1583,11 +1581,11 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 成功则返回值return为True；否则返回错误信息。
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1611,11 +1609,11 @@ json响应
     }
 
 
-#### RebuildInstanceRootImage ####
+### RebuildInstanceRootImage ###
 
 重置指定虚拟机实例的的系统磁盘镜像。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -1640,11 +1638,11 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 成功则返回值return为True；否则返回错误信息。
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1667,11 +1665,11 @@ json响应
         }
     }
 
-#### CreateInstance ####
+### CreateInstance ###
 
-创建虚拟机实例。*注意：该操作涉及系统帐户扣费，请保证帐户有足够余额，否则将创建失败*。
+创建虚拟机实例。*注意：该操作涉及帐户扣费，请保证帐户有足够余额，否则将创建失败*。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -1714,7 +1712,7 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 如果成功返回生成的Instance信息，包含如下字段：
 
@@ -1743,7 +1741,7 @@ json响应
   </tbody>
 </table>
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1777,11 +1775,11 @@ json响应
     }
 
 
-#### TerminateInstance ####
+### TerminateInstance ###
 
 销毁指定虚拟机实例。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -1800,11 +1798,11 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 成功则返回值return为True；否则返回错误信息。
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1828,11 +1826,11 @@ json响应
     }
 
 
-#### RenewInstance ####
+### RenewInstance ###
 
-续期指定虚拟机实例。*注意：该操作涉及系统帐户扣费，请保证帐户有足够余额，否则将续期失败*。
+续期指定虚拟机实例。*注意：该操作涉及帐户扣费，请保证帐户有足够余额，否则将续期失败*。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -1858,11 +1856,11 @@ json响应
 </table>
 
 
-##### 返回数据： #####
+**返回数据：**
 
 成功则返回值return为True；否则返回错误信息。
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1886,11 +1884,11 @@ json响应
         }
     }
 
-#### ChangeInstanceType ####
+### ChangeInstanceType ###
 
-更改指定虚拟机实例的类型。*注意：该操作涉及系统帐户扣费，请保证帐户有足够余额，否则将更改失败*。
+更改指定虚拟机实例的类型。*注意：该操作涉及帐户扣费，请保证帐户有足够余额，否则将更改失败*。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -1922,11 +1920,11 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 成功则返回值return为True；否则返回错误信息。
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -1952,11 +1950,11 @@ json响应
     }
 
 
-#### GetInstanceMetadata ####
+### GetInstanceMetadata ###
 
 获取指定虚拟机实例的元数据。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -1975,11 +1973,11 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 返回InstanceMetadata数据集，包含所有key-value的元数据。
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
@@ -2011,11 +2009,11 @@ json响应
     }
 
 
-#### PutInstanceMetadata ####
+### PutInstanceMetadata ###
 
 设置指定虚拟机实例的元数据。
 
-##### 请求参数： #####
+**请求参数：**
 
 <table>
   <tbody>
@@ -2046,11 +2044,11 @@ json响应
   </tbody>
 </table>
 
-##### 返回数据： #####
+**返回数据：**
 
 成功则返回值return为True；否则返回错误信息。
 
-##### 示例： #####
+**示例：**
 
 请求URL
 
