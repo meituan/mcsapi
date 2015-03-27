@@ -100,7 +100,7 @@ xml格式错误响应
     <?xml version="1.0" encoding="utf-8"?>
     <ErrorResponse>
         <Error>
-            <message>Not enough balance</message>
+            <message>No enough balance</message>
             <code>406</code>
         </Error>
     </ErrorResponse>
@@ -111,7 +111,7 @@ json格式错误响应
 
     {"ErrorResponse":
         {"Error":
-            {"message": "Not enough balance",
+            {"message": "No enough balance",
              "code": 406
             }
         }
